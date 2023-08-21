@@ -23,7 +23,7 @@ def MPJPE(x, y):
 
 
 def PCKh(x, y, alpha=0.5):
-    h = (torch.sqrt(((x[:, :, :, 15] - x[:, :, :, 0]) ** 2).sum(dim=-1)) * 2).unsqueeze(-1)
+    h = (torch.sqrt(((x[:, :, :, 1] - x[:, :, :, 0]) ** 2).sum(dim=-1)) * 2).unsqueeze(-1)
     d = torch.sqrt(((x - y) ** 2).sum(dim=-1))
     PCKh = torch.zeros_like(d)
     PCKh[d < h * alpha] = 1.0

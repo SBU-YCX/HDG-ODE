@@ -11,7 +11,7 @@ import scipy.io as sio
 import torch.optim as optim
 from Processing import MuPoTS, Human36M
 from torch.utils.data import DataLoader
-from Models import ODERNN, GCODERNN, DGCODERNN, HNODE, HGCODE, HDGODE, GCGRU, DGCGRU, STGCN, SemGCGRU, SemGCODERNN
+from Models import HDGODE
 from Losses import MaskedMSE, MPJPE, PCKh, ParamCount
 from tqdm.auto import tqdm
 from thop import profile
@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(description="Experimental Configuration.")
 # Hyper-parameter
 parser.add_argument('--dataset', 
 					required=False, 
-					default='mupots_single', 
+					default='mupots_multi', 
 					type=str, 
 					help='Dataset')
 parser.add_argument('--data_path', 
@@ -70,7 +70,7 @@ parser.add_argument('--max_epoch',
 					help='Max number of epoches.')
 parser.add_argument('--early_stop', 
 					required=False,
-					default=10, 
+					default=20, 
 					type=int, 
 					help='Early stop threshold.')
 parser.add_argument('--dim_in', 
@@ -152,23 +152,13 @@ def get_logger(args):
 
 def get_dataset(args):
 	''' Get Dataset ''' 
-	if args.dataset.lower() in ['mupots_single', 'mupots_multi']:
+	if args.dataset.lower() == 'mupots_multi':
 		train_set = MuPoTS(phase='train', 
 						   method=args.dataset.lower().split('_')[1])
 		valid_set = MuPoTS(phase='valid', 
 						   method=args.dataset.lower().split('_')[1])
 		test_set = MuPoTS(phase='test', 
 						   method=args.dataset.lower().split('_')[1])
-	elif args.dataset.lower() in ['h36m_single']:
-		train_set = Human36M(phase='train', 
-						   	method=args.dataset.lower().split('_')[1], 
-						   	data_path="../Data/Human36M/processed/data_100_t{}_s{}.hdf5".format(int(args.pt * 10), int(args.ps * 10)))
-		valid_set = Human36M(phase='valid', 
-						   	method=args.dataset.lower().split('_')[1], 
-						   	data_path="../Data/Human36M/processed/data_100_t{}_s{}.hdf5".format(int(args.pt * 10), int(args.ps * 10)))
-		test_set = Human36M(phase='test', 
-						   	method=args.dataset.lower().split('_')[1],
-						   	data_path="../Data/Human36M/processed/data_100_t{}_s{}.hdf5".format(int(args.pt * 10), int(args.ps * 10)))
 	else:
 		train_set = None
 		valid_set = None
@@ -190,118 +180,7 @@ def get_dataset(args):
 
 def get_model(args):
 	''' Get Model '''
-	if args.model.lower() == 'odernn':
-		if args.dataset.split('_')[1].lower() == 'single':
-			model = ODERNN(args.dim_in, 
-					       args.dim_out, 
-					       args.dim_rnn,
-					       args.dim_hidden, 
-					       args.num_hidden[-1], 
-						   args.num_rnn[-1], 
-					       args.num_joint[0],
-					       args.delta_t)
-		else:
-			model = ODERNN(args.dim_in, 
-					       args.dim_out, 
-					       args.dim_rnn,
-					       args.dim_hidden, 
-					       args.num_hidden[-1], 
-						   args.num_rnn[-1], 
-					       args.num_joint[0] * 3,
-					       args.delta_t)
-	elif args.model.lower() == 'gcodernn':
-		if args.dataset.split('_')[1].lower() == 'single':
-			model = GCODERNN(args.dim_in, 
-						 	 args.dim_out, 
-					         args.dim_rnn,
-						 	 args.dim_hidden, 
-						 	 args.num_hidden[-1], 
-						   	 args.num_rnn[-1], 
-						 	 args.num_joint[0], 
-						 	 args.delta_t, 
-						 	 choice='F')
-		else:
-			model = GCODERNN(args.dim_in, 
-							 args.dim_out, 
-							 args.dim_rnn,
-							 args.dim_hidden, 
-							 args.num_hidden[-1], 
-						   	 args.num_rnn[-1], 
-							 args.num_joint[0] * 3, 
-							 args.delta_t, 
-							 choice='F')
-	elif args.model.lower() == 'dgcodernn':
-		if args.dataset.split('_')[1].lower() == 'single':
-			model = DGCODERNN(args.dim_in, 
-						  	  args.dim_out, 
-						  	  args.dim_rnn,
-						  	  args.dim_hidden, 
-						  	  args.num_hidden[-1], 
-						   	  args.num_rnn[-1], 
-						  	  args.num_joint[0], 
-						  	  args.delta_t, 
-						  	  choice='F')
-		else:
-			model = DGCODERNN(args.dim_in, 
-						  	  args.dim_out, 
-						  	  args.dim_rnn,
-						  	  args.dim_hidden, 
-						  	  args.num_hidden[-1], 
-						   	  args.num_rnn[-1], 
-						  	  args.num_joint[0] * 3, 
-						  	  args.delta_t, 
-						  	  choice='F')
-	elif args.model.lower() == 'semgcodernn':
-		if args.dataset.split('_')[1].lower() == 'single':
-			model = SemGCODERNN(args.dim_in, 
-						  	  args.dim_out, 
-						  	  args.dim_rnn,
-						  	  args.dim_hidden, 
-						  	  args.num_hidden[-1], 
-						   	  args.num_rnn[-1], 
-						  	  args.num_joint[0], 
-						  	  args.delta_t, 
-						  	  choice='F')
-		else:
-			model = SemGCODERNN(args.dim_in, 
-						  	  args.dim_out, 
-						  	  args.dim_rnn,
-						  	  args.dim_hidden, 
-						  	  args.num_hidden[-1], 
-						   	  args.num_rnn[-1], 
-						  	  args.num_joint[0] * 3, 
-						  	  args.delta_t, 
-						  	  choice='F')
-	elif args.model.lower() == 'hnode':
-		if args.dataset.split('_')[1].lower() == 'single':
-			model = HNODE(args.dim_in, 
-					  	  args.dim_out, 
-					  	  args.dim_rnn,
-					  	  args.dim_hidden, 
-					  	  args.num_hidden, 
-						  args.num_rnn, 
-					  	  args.num_joint, 
-					  	  args.delta_t)
-		else:
-			model = HNODE(args.dim_in, 
-					  	  args.dim_out, 
-					  	  args.dim_rnn,
-					  	  args.dim_hidden, 
-					  	  args.num_hidden, 
-						  args.num_rnn, 
-					  	  [args.num_joint[0], args.num_joint[1] * 3, args.num_joint[2] * 3, args.num_joint[3] * 3], 
-					  	  args.delta_t)
-	elif args.model.lower() == 'hgcode':
-		model = HGCODE(args.dim_in, 
-					   args.dim_out, 
-					   args.dim_rnn,
-					   args.dim_hidden, 
-					   args.num_hidden, 
-					   args.num_rnn, 
-					   args.num_joint, 
-					   args.delta_t, 
-					   choice='F')
-	elif args.model.lower() == 'hdgode':
+	if args.model.lower() == 'hdgode':
 		model = HDGODE(args.dim_in, 
 					    args.dim_out, 
 					    args.dim_rnn,
@@ -311,62 +190,8 @@ def get_model(args):
 					    args.num_joint, 
 					    args.delta_t, 
 					    choice='F')
-	elif args.model.lower() == 'gcgru':
-		model = GCGRU(args.dim_in, 
-					  args.dim_out, 
-					  args.dim_rnn, 
-					  args.num_rnn[-1], 
-					  args.delta_t, 
-				      choice='F')
-	elif args.model.lower() == 'dgcgru':
-		if args.dataset.split('_')[1].lower() == 'single':
-			model = DGCGRU(args.dim_in, 
-						   args.dim_out, 
-						   args.dim_rnn, 
-						   args.num_rnn[-1],
-						   args.num_joint[0], 
-						   args.delta_t, 
-						   choice='F')
-		else:
-			model = DGCGRU(args.dim_in, 
-						   args.dim_out, 
-						   args.dim_rnn, 
-						   args.num_rnn[-1],
-						   args.num_joint[0] * 3, 
-						   args.delta_t, 
-						   choice='F')
-	elif args.model.lower() == 'semgcgru':
-		if args.dataset.split('_')[1].lower() == 'single':
-			model = SemGCGRU(args.dim_in, 
-						   args.dim_out, 
-						   args.dim_rnn, 
-						   args.num_rnn[-1],
-						   args.num_joint[0], 
-						   args.delta_t, 
-						   choice='F')
-		else:
-			model = SemGCGRU(args.dim_in, 
-						   args.dim_out, 
-						   args.dim_rnn, 
-						   args.num_rnn[-1],
-						   args.num_joint[0] * 3, 
-						   args.delta_t, 
-						   choice='F')
-	elif args.model.lower() == 'stgcn':
-		if args.dataset.split('_')[1].lower() == 'single':
-			model = STGCN(args.dim_in, 
-					  	args.dim_out, 
-					  	args.dim_hidden, 
-					  	args.kernel_size, 
-					  	args.num_rnn[-1], 
-					  	args.num_joint[0])
-		else:
-			model = STGCN(args.dim_in, 
-					  	args.dim_out, 
-					  	args.dim_hidden, 
-					  	args.kernel_size, 
-					  	args.num_rnn[-1], 
-					  	args.num_joint[0] * 3)
+	else: 
+		model = None
 	return model.cuda()
 
 
@@ -419,20 +244,8 @@ def train(args):
 		for n, data in enumerate(pbar):
 			optimizer.zero_grad()
 			loss = model.get_loss(data)
-			"""
-			#if torch.isnan(loss):
-				stat = model.state_dict()
-				for k, v in stat.items():
-					try:
-						print(k, v.mean(), v.std(), v.max(), v.min())
-					except:
-						print(k, v)
-			"""
 			loss.backward()
-			#torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.01, norm_type=2)
-			torch.nn.utils.clip_grad_value_(model.parameters(), 100)
 			optimizer.step()
-			#torch.autograd.set_detect_anomaly(True)
 			pbar.write('Epoch\t{:04d}, Iteration\t{:04d}: Loss\t{:6.4f}'.format(epoch, n, loss))
 		# Valid
 		model.eval()
@@ -463,12 +276,7 @@ def train(args):
 			bad_epoch += 1
 		# Early stop judjement
 		if bad_epoch >= args.early_stop:
-			#args.learning_rate *= 0.1
-			#logger.info('Current lr: {:6.4f}'.format(args.learning_rate))
-			#bad_epoch = 1
 			break
-		#if args.learning_rate < 5e-5:
-		#	break
 	# Close Logger
 	for handler in logger.handlers[:]:
 		logger.removeHandler(handler)
@@ -503,10 +311,6 @@ def test(args):
 			starter.record()
 			ys = model.forward(data)[:, 1:]
 			ender.record()
-			#flops = FlopCountAnalysis(model, data)
-			#print(flops.total())
-			#print(summary(model, input_data=[data]))
-			#return
 			torch.cuda.synchronize()
 			time += starter.elapsed_time(ender)
 			xs = data['x3d'][:, 1:].cuda()
@@ -529,8 +333,6 @@ def test(args):
 	pckh_mean_sum3 = (pckh_mean_sum3 / num_item).detach().cpu().numpy()
 	time = (time / num_item)
 	pc = ParamCount(model)
-	#flop, param = profile(model, inputs = (torch.randn(1, 50, 3, 16, 2)))
-	#print(flop, param)
 	pbar.write('\x1b[1;35mTesting: RMSE - {:6.4f}\tMAE - {:6.4f}\tMPJPE - {:6.4f}\tPCKh@0.5\t - {:6.4f}\tPCKh@0.1\t - {:6.4f}\tPCKh@1.0\t - {:6.4f}\tParams Count\t - {:6.4f}\tTime - {:6.4f}.\x1b[0m.\x1b[0m'.format(rmse, mae, mpjpe_mean_sum, pckh_mean_sum1, pckh_mean_sum2, pckh_mean_sum3, pc, time))
 	logger.info('Testing: RMSE - {:6.4f}\tMAE - {:6.4f}\tMPJPE - {:6.4f}\tPCKh@0.5\t - {:6.4f}\tPCKh@0.1\t - {:6.4f}\tPCKh@1.0\t - {:6.4f}\tParams Count\t - {:6.4f}\tTime - {:6.4f}'.format(rmse, mae, mpjpe_mean_sum, pckh_mean_sum1, pckh_mean_sum2, pckh_mean_sum3, pc, time))
 	# Close Logger

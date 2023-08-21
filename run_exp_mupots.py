@@ -1,11 +1,13 @@
 import os
-from Train import parser, train, test
+from Train import parser, train, test, plot
 
 
 args = parser.parse_args()
-args.num_rnn = [1, 1, 1]
-args.model = 'SemGCGRU'#'GCGRU'#'STGCN'#'HDGODE'#'HGCODE'#'HNODE'#'DGCODERNN'#'SemGCODERNN'#'GCODERNN'#'ODERNN'#'DGCGRU'#
-args.dataset = 'mupots_multi'#'mupots_single'#
+args.model = 'HDGODE'
+args.dataset = 'mupots_multi'
+args.max_epoch = 100
+args.early_stop = 20
+
 args.learning_rate = 1e-2
 train(args)
 args.pretrained = True
