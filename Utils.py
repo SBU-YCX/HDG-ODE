@@ -22,7 +22,7 @@ class DGCLayer(nn.Module):
 
     def forward(self, x, a):
         w = self.network1(a)
-        w_a = torch.matmul(w, a)
+        w_a = w * a
         h = self.network2(torch.matmul(w_a, x))
         return h
 
