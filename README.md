@@ -4,7 +4,7 @@ Hierarchical Dynamic Graph Ordinary Differential Equation
 ## Introduction: 
 This is an implementation of the paper [HDG-ODE: A Hierarchical Continuous-Time Model for Human Pose Forecasting](https://openaccess.thecvf.com/content/ICCV2023/html/Xing_HDG-ODE_A_Hierarchical_Continuous-Time_Model_for_Human_Pose_Forecasting_ICCV_2023_paper.html) accepted by ICCV 2023.
 
-![dasda](https://drive.google.com/file/d/1WxvOMu1tDX_ZuZMjLqjnayGxXoU9jUC7)
+![HDG-ODE](https://github.com/SBU-YCX/imgs/blob/main/HDG-ODE.PNG)
 
 ## Citation:
 If you use this code, please cite:
